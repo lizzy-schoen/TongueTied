@@ -25,11 +25,25 @@ class GameScene: SKScene {
 
     // MARK: - State
 
+    var gameMode: GameMode = .level(number: 1)
+
+    private var isDontStopMode: Bool {
+        if case .dontStop = gameMode { return true }
+        return false
+    }
+
     private var isPlaying = false
     private var isPaused = false
     private var pauseTime: TimeInterval = 0
     private let maxProximityRange: CGFloat = 150
     private var resignObserver: Any?
+
+    // Don't Stop mode state
+    private var dontStopExcitement: Float = 0
+    private var touchDuration: TimeInterval = 0
+    private var touchStartTime: TimeInterval?
+    private var backButton: SKLabelNode?
+    private var menuButton: SKLabelNode?
 
     // MARK: - Scene lifecycle
 
@@ -45,7 +59,12 @@ class GameScene: SKScene {
             forName: .appWillResignActive, object: nil, queue: .main
         ) { [weak self] _ in self?.pauseGame() }
 
-        showLevelIntro(Level.all[0])
+        switch gameMode {
+        case .level(let number):
+            showLevelIntro(Level.all[number - 1])
+        case .dontStop:
+            enterDontStopMode()
+        }
     }
 
     deinit {
@@ -197,6 +216,17 @@ class GameScene: SKScene {
         ])))
         addChild(tap)
 
+        // Menu button on intro screen
+        let menuBtn = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        menuBtn.text = "Menu >"
+        menuBtn.fontSize = 16
+        menuBtn.fontColor = UIColor(white: 0.6, alpha: 1)
+        menuBtn.position = CGPoint(x: size.width - 50, y: size.height - 60)
+        menuBtn.name = "intro"
+        menuBtn.zPosition = 50
+        addChild(menuBtn)
+        menuButton = menuBtn
+
         // Highlight target zones, dim others
         for zone in zoneNodes {
             if level.targetZones.contains(zone.zoneType) {
@@ -211,7 +241,42 @@ class GameScene: SKScene {
         }
     }
 
+    private func enterDontStopMode() {
+        scoreLabel.isHidden = true
+        comboLabel.isHidden = true
+        timerLabel.isHidden = true
+        levelLabel.text = "Don't Stop"
+
+        for zone in zoneNodes { zone.alpha = 1 }
+
+        let back = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        back.text = "< Back"
+        back.fontSize = 16
+        back.fontColor = UIColor(white: 0.7, alpha: 1)
+        back.position = CGPoint(x: size.width - 50, y: size.height - 60)
+        back.name = "btn_back"
+        back.zPosition = 50
+        addChild(back)
+        backButton = back
+
+        // Use Freestyle level config for speed ranges
+        scoreManager.startLevel(Level.all[5], at: 0)
+        isPlaying = true
+    }
+
+    private func navigateToMenu() {
+        audioSynthManager.silence()
+        hapticManager.stopContinuous()
+        hapticManager.stopProximity()
+        touchTracker.reset()
+
+        let menu = MainMenuScene(size: size)
+        menu.scaleMode = .aspectFill
+        view?.presentScene(menu, transition: .fade(withDuration: 0.4))
+    }
+
     private func startCurrentLevel(at time: TimeInterval) {
+        menuButton = nil
         enumerateChildNodes(withName: "intro") { n, _ in n.removeFromParent() }
         for zone in zoneNodes {
             zone.removeAction(forKey: "glow")
@@ -232,13 +297,21 @@ class GameScene: SKScene {
             hapticManager.playSuccess()
             let prevBest = ScoreManager.highScore(for: scoreManager.currentLevel.number)
             let isNewBest = score > prevBest
+            if isNewBest { submitTotalScoreToLeaderboard() }
             showFeedback(isNewBest ? "New Best!" : "Level Complete!", color: .green)
             run(.wait(forDuration: 2)) { [weak self] in
-                guard let self, let next = self.scoreManager.nextLevel() else {
-                    self?.showFeedback("All levels done!", color: .yellow)
-                    return
+                guard let self else { return }
+                if let next = self.scoreManager.nextLevel() {
+                    self.showLevelIntro(next)
+                } else {
+                    self.showFeedback("All levels done!", color: .yellow)
+                    self.run(.wait(forDuration: 1.5)) { [weak self] in
+                        guard let self else { return }
+                        let scene = LevelSelectScene(size: self.size)
+                        scene.scaleMode = .aspectFill
+                        self.view?.presentScene(scene, transition: .fade(withDuration: 0.4))
+                    }
                 }
-                self.showLevelIntro(next)
             }
         } else {
             showFeedback("Try Again!  \(score)/\(scoreManager.currentLevel.targetScore)", color: .orange)
@@ -258,6 +331,14 @@ class GameScene: SKScene {
             cycleTheme()
             return
         }
+        if let back = backButton, back.contains(loc) {
+            navigateToMenu()
+            return
+        }
+        if let menu = menuButton, menu.contains(loc) {
+            navigateToMenu()
+            return
+        }
         if isPaused {
             resumeGame()
             return
@@ -265,6 +346,9 @@ class GameScene: SKScene {
         if !isPlaying {
             startCurrentLevel(at: touch.timestamp)
             return
+        }
+        if isDontStopMode && touchStartTime == nil {
+            touchStartTime = touch.timestamp
         }
         processTouch(at: touch.location(in: self), timestamp: touch.timestamp)
     }
@@ -346,16 +430,20 @@ class GameScene: SKScene {
         }
 
         // HUD updates
-        patternLabel.text = "\(touchTracker.currentPattern.rawValue)  |  Speed \(Int(touchTracker.averageSpeed))"
+        if isDontStopMode {
+            patternLabel.text = touchTracker.currentPattern.rawValue
+        } else {
+            patternLabel.text = "\(touchTracker.currentPattern.rawValue)  |  Speed \(Int(touchTracker.averageSpeed))"
 
-        switch touchTracker.speedRating(idealRange: scoreManager.currentLevel.idealSpeedRange) {
-        case 0:  showFeedback("Faster...",      color: UIColor(white: 0.5, alpha: 1))
-        case 2:  showFeedback("Slower...",       color: UIColor(red: 1, green: 0.5, blue: 0.3, alpha: 1))
-        default:
-            if touchTracker.patternConsistency > 0.7 {
-                showFeedback("Great rhythm!", color: .green)
-            } else {
-                showFeedback("Good!",         color: UIColor(white: 0.8, alpha: 1))
+            switch touchTracker.speedRating(idealRange: scoreManager.currentLevel.idealSpeedRange) {
+            case 0:  showFeedback("Faster...",      color: UIColor(white: 0.5, alpha: 1))
+            case 2:  showFeedback("Slower...",       color: UIColor(red: 1, green: 0.5, blue: 0.3, alpha: 1))
+            default:
+                if touchTracker.patternConsistency > 0.7 {
+                    showFeedback("Great rhythm!", color: .green)
+                } else {
+                    showFeedback("Good!",         color: UIColor(white: 0.8, alpha: 1))
+                }
             }
         }
     }
@@ -368,12 +456,22 @@ class GameScene: SKScene {
         touchTracker.reset()
         patternLabel.text = ""
         audioSynthManager.silence()
+        touchStartTime = nil
+        touchDuration = 0
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
         guard isPlaying else { return }
+
+        if isDontStopMode {
+            if let start = touchStartTime, currentTouchedZone != nil {
+                touchDuration = currentTime - start
+            }
+            updateDontStopExcitement()
+            return
+        }
 
         scoreManager.update(touchingZone: currentTouchedZone?.zoneType,
                             touchTracker: touchTracker,
@@ -386,9 +484,37 @@ class GameScene: SKScene {
             : .white
     }
 
+    private func updateDontStopExcitement() {
+        guard currentTouchedZone != nil else {
+            dontStopExcitement = max(0, dontStopExcitement - 0.002)
+            return
+        }
+        let speedFactor = Float(touchTracker.speedScore(
+            idealRange: Level.all[5].idealSpeedRange))
+        let patternFactor = Float(touchTracker.patternConsistency)
+        let durationFactor = min(1.0, Float(touchDuration / 10.0))
+
+        let target = speedFactor * 0.35 + patternFactor * 0.35 + durationFactor * 0.30
+        dontStopExcitement += (target - dontStopExcitement) * 0.02
+        dontStopExcitement = min(1.0, max(0, dontStopExcitement))
+    }
+
     // MARK: - Synth state
 
     private func currentSynthState() -> SynthState {
+        let freq = currentTouchedZone?.zoneType.baseToneFrequency ?? 220.0
+        let active = currentTouchedZone != nil
+
+        if isDontStopMode {
+            return SynthState(
+                isActive: active,
+                fundamentalFreq: freq, targetFreq: freq,
+                amplitude: active ? (0.15 + dontStopExcitement * 0.50) : 0,
+                excitement: dontStopExcitement,
+                speedModulation: 0, patternModulation: 0
+            )
+        }
+
         let combo = scoreManager.combo
         let score = scoreManager.score
         let level = scoreManager.currentLevel
@@ -398,13 +524,11 @@ class GameScene: SKScene {
         let excitement  = min(1.0, comboFactor * 0.5 + scoreFactor * 0.3)
 
         return SynthState(
-            isActive: currentTouchedZone != nil,
-            fundamentalFreq: currentTouchedZone?.zoneType.baseToneFrequency ?? 220.0,
-            targetFreq: currentTouchedZone?.zoneType.baseToneFrequency ?? 220.0,
-            amplitude: currentTouchedZone != nil ? (0.15 + excitement * 0.50) : 0,
+            isActive: active,
+            fundamentalFreq: freq, targetFreq: freq,
+            amplitude: active ? (0.15 + excitement * 0.50) : 0,
             excitement: excitement,
-            speedModulation: 0,
-            patternModulation: 0
+            speedModulation: 0, patternModulation: 0
         )
     }
 
@@ -439,6 +563,16 @@ class GameScene: SKScene {
     }
 
     // MARK: - Helpers
+
+    private func submitTotalScoreToLeaderboard() {
+        guard let name = ScreenNameManager.current, !name.isEmpty else { return }
+        let total = ScoreManager.totalBestScore()
+        CloudKitService.shared.submitScore(screenName: name, totalScore: total) { result in
+            if case .failure(let err) = result {
+                print("Leaderboard submit failed: \(err)")
+            }
+        }
+    }
 
     private func cycleTheme() {
         ColorTheme.cycleNext()

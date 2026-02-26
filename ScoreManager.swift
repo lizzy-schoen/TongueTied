@@ -30,6 +30,10 @@ class ScoreManager {
         }
     }
 
+    static func totalBestScore() -> Int {
+        Level.all.reduce(0) { $0 + highScore(for: $1.number) }
+    }
+
     static func highestCompletedLevel() -> Int {
         for level in Level.all.reversed() {
             if highScore(for: level.number) >= level.targetScore { return level.number }
