@@ -7,6 +7,7 @@ class GameScene: SKScene {
     private let hapticManager = HapticManager()
     private let touchTracker  = TouchTracker()
     private let scoreManager  = ScoreManager()
+    private let audioSynthManager = AudioSynthManager()
 
     // MARK: - Nodes
 
@@ -24,6 +25,7 @@ class GameScene: SKScene {
     // MARK: - State
 
     private var isPlaying = false
+    private let maxProximityRange: CGFloat = 150
 
     // MARK: - Scene lifecycle
 
@@ -33,6 +35,7 @@ class GameScene: SKScene {
         buildZones()
         buildHUD()
         wireScoreCallbacks()
+        audioSynthManager.setup()
 
         showLevelIntro(Level.all[0])
     }
@@ -123,6 +126,8 @@ class GameScene: SKScene {
         timerLabel.text = ""
         patternLabel.text = ""
 
+        audioSynthManager.silence()
+
         // Store the level so startLevel uses it
         scoreManager.startLevel(level, at: 0)   // time doesn't matter yet
 
@@ -186,7 +191,9 @@ class GameScene: SKScene {
     private func handleLevelComplete(passed: Bool, score: Int) {
         isPlaying = false
         hapticManager.stopContinuous()
+        hapticManager.stopProximity()
         touchTracker.reset()
+        audioSynthManager.silence()
 
         if passed {
             hapticManager.playSuccess()
@@ -237,23 +244,61 @@ class GameScene: SKScene {
             currentTouchedZone?.setTouched(false)
             hit?.setTouched(true)
 
+            // Border bump when moving between zones (not first touch or leaving all zones)
+            if currentTouchedZone != nil && hit != nil {
+                hapticManager.playBorderBump()
+            }
+
             if let zone = hit {
+                // Stop proximity haptics when entering a zone
+                hapticManager.stopProximity()
+
+                // Zone-specific textured haptic
                 hapticManager.playTap(intensity: zone.zoneType.hapticIntensity, sharpness: 0.5)
-                hapticManager.startContinuous(
-                    intensity: zone.zoneType.hapticIntensity * 0.5, sharpness: 0.3)
+                hapticManager.startContinuousForZone(zone.zoneType.hapticProfile)
+
+                // Audio: set new target frequency (portamento handles the glide)
+                var synthState = currentSynthState()
+                synthState.isActive = true
+                synthState.targetFreq = zone.zoneType.baseToneFrequency
+                audioSynthManager.updateState(synthState)
             } else {
                 hapticManager.stopContinuous()
+
+                // Audio: begin fade-out
+                audioSynthManager.silence()
             }
             currentTouchedZone = hit
         }
 
-        // Modulate haptic with speed
+        // Proximity haptics when finger is off all zones
+        if hit == nil {
+            let nearestDistance = zoneNodes
+                .map { hypot($0.centroid.x - point.x, $0.centroid.y - point.y) }
+                .min() ?? .greatestFiniteMagnitude
+            hapticManager.playProximityFeedback(distance: nearestDistance, maxDistance: maxProximityRange)
+        }
+
+        // Modulate haptic and audio with speed
         if let zone = currentTouchedZone {
             let spd = touchTracker.speedScore(
                 idealRange: scoreManager.currentLevel.idealSpeedRange)
+            let profile = zone.zoneType.hapticProfile
+
+            // Haptic: modulate within zone's sharpness range
+            let sharpness = profile.sustainSharpnessRange.lowerBound +
+                Float(spd) * (profile.sustainSharpnessRange.upperBound - profile.sustainSharpnessRange.lowerBound)
             hapticManager.updateContinuous(
-                intensity: zone.zoneType.hapticIntensity * Float(0.3 + spd * 0.7),
-                sharpness: Float(spd) * 0.5)
+                intensity: profile.baseIntensity * Float(0.3 + spd * 0.7),
+                sharpness: sharpness)
+
+            // Audio: update speed and pattern modulation
+            var synthState = currentSynthState()
+            synthState.isActive = true
+            synthState.targetFreq = zone.zoneType.baseToneFrequency
+            synthState.speedModulation = Float(spd)
+            synthState.patternModulation = Float(touchTracker.patternConsistency)
+            audioSynthManager.updateState(synthState)
         }
 
         // HUD updates
@@ -275,8 +320,10 @@ class GameScene: SKScene {
         currentTouchedZone?.setTouched(false)
         currentTouchedZone = nil
         hapticManager.stopContinuous()
+        hapticManager.stopProximity()
         touchTracker.reset()
         patternLabel.text = ""
+        audioSynthManager.silence()
     }
 
     // MARK: - Game loop
@@ -293,6 +340,28 @@ class GameScene: SKScene {
         timerLabel.fontColor = remaining < 10
             ? (remaining.truncatingRemainder(dividingBy: 1) < 0.5 ? .red : .white)
             : .white
+    }
+
+    // MARK: - Synth state
+
+    private func currentSynthState() -> SynthState {
+        let combo = scoreManager.combo
+        let score = scoreManager.score
+        let level = scoreManager.currentLevel
+
+        let comboFactor = Float(min(combo, 50)) / 50.0
+        let scoreFactor = Float(score) / Float(max(1, level.targetScore))
+        let excitement  = min(1.0, comboFactor * 0.5 + scoreFactor * 0.3)
+
+        return SynthState(
+            isActive: currentTouchedZone != nil,
+            fundamentalFreq: currentTouchedZone?.zoneType.baseToneFrequency ?? 220.0,
+            targetFreq: currentTouchedZone?.zoneType.baseToneFrequency ?? 220.0,
+            amplitude: currentTouchedZone != nil ? (0.15 + excitement * 0.50) : 0,
+            excitement: excitement,
+            speedModulation: 0,
+            patternModulation: 0
+        )
     }
 
     // MARK: - Helpers

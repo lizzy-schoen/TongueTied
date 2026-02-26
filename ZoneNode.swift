@@ -62,6 +62,17 @@ enum ZoneType: String, CaseIterable {
     var hapticIntensity: Float {
         Float(sensitivity / 3.0)
     }
+
+    /// Base frequency for audio synthesis — musically related intervals
+    var baseToneFrequency: Float {
+        switch self {
+        case .outerLabiaLeft, .outerLabiaRight: return 130.81  // C3
+        case .innerLabiaLeft, .innerLabiaRight: return 196.00  // G3
+        case .vaginalOpening:                   return 220.00  // A3
+        case .clitoralHood:                     return 293.66  // D4
+        case .clitoris:                         return 349.23  // F4
+        }
+    }
 }
 
 // MARK: - Zone sprite node
@@ -69,6 +80,12 @@ enum ZoneType: String, CaseIterable {
 class ZoneNode: SKShapeNode {
     let zoneType: ZoneType
     private(set) var isBeingTouched = false
+
+    var centroid: CGPoint {
+        guard let path = self.path else { return .zero }
+        let bounds = path.boundingBox
+        return CGPoint(x: bounds.midX, y: bounds.midY)
+    }
 
     init(zoneType: ZoneType, path: CGPath) {
         self.zoneType = zoneType

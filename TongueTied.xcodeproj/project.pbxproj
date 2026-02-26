@@ -15,6 +15,8 @@
 		A1000006 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006 /* HapticManager.swift */; };
 		A1000007 /* ScoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007 /* ScoreManager.swift */; };
 		A1000008 /* Level.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008 /* Level.swift */; };
+		A100000B /* ZoneHapticProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D /* ZoneHapticProfile.swift */; };
+		A100000C /* AudioSynthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000E /* AudioSynthManager.swift */; };
 		A1000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000009 /* Assets.xcassets */; };
 		A100000A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A200000A /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
@@ -32,6 +34,8 @@
 		A200000A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A200000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A200000C /* TongueTied.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TongueTied.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A200000D /* ZoneHapticProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoneHapticProfile.swift; sourceTree = "<group>"; };
+		A200000E /* AudioSynthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSynthManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,12 +52,12 @@
 		A4000001 = {
 			isa = PBXGroup;
 			children = (
-				A4000002 /* TongueTied */,
+				A4000002 /*  */,
 				A4000003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A4000002 /* TongueTied */ = {
+		A4000002 /*  */ = {
 			isa = PBXGroup;
 			children = (
 				A2000001 /* AppDelegate.swift */,
@@ -64,11 +68,13 @@
 				A2000006 /* HapticManager.swift */,
 				A2000007 /* ScoreManager.swift */,
 				A2000008 /* Level.swift */,
+				A200000D /* ZoneHapticProfile.swift */,
+				A200000E /* AudioSynthManager.swift */,
 				A2000009 /* Assets.xcassets */,
 				A200000A /* LaunchScreen.storyboard */,
 				A200000B /* Info.plist */,
 			);
-			path = "";
+			name = "";
 			sourceTree = "<group>";
 		};
 		A4000003 /* Products */ = {
@@ -157,6 +163,8 @@
 				A1000006 /* HapticManager.swift in Sources */,
 				A1000007 /* ScoreManager.swift in Sources */,
 				A1000008 /* Level.swift in Sources */,
+				A100000B /* ZoneHapticProfile.swift in Sources */,
+				A100000C /* AudioSynthManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,6 +297,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3TC72MWFP8;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -315,6 +324,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3TC72MWFP8;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
