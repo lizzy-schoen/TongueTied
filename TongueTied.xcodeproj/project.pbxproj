@@ -15,6 +15,8 @@
 		A1000006 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006 /* HapticManager.swift */; };
 		A1000007 /* ScoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007 /* ScoreManager.swift */; };
 		A1000008 /* Level.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008 /* Level.swift */; };
+		A1000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000009 /* Assets.xcassets */; };
+		A100000A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A200000A /* LaunchScreen.storyboard */; };
 		A100000B /* ZoneHapticProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D /* ZoneHapticProfile.swift */; };
 		A100000C /* AudioSynthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000E /* AudioSynthManager.swift */; };
 		A100000D /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000F /* GameMode.swift */; };
@@ -23,8 +25,6 @@
 		A1000010 /* LeaderboardScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012 /* LeaderboardScene.swift */; };
 		A1000011 /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013 /* CloudKitService.swift */; };
 		A1000012 /* ScreenNameManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014 /* ScreenNameManager.swift */; };
-		A1000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000009 /* Assets.xcassets */; };
-		A100000A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A200000A /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,12 +64,12 @@
 		A4000001 = {
 			isa = PBXGroup;
 			children = (
-				A4000002 /*  */,
+				A4000002,
 				A4000003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A4000002 /*  */ = {
+		A4000002 = {
 			isa = PBXGroup;
 			children = (
 				A2000001 /* AppDelegate.swift */,
@@ -92,7 +92,6 @@
 				A200000A /* LaunchScreen.storyboard */,
 				A200000B /* Info.plist */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		A4000003 /* Products */ = {
@@ -131,7 +130,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					A5000001 = {
 						CreatedOnToolsVersion = 15.0;
@@ -230,6 +229,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 3TC72MWFP8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -253,6 +253,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -293,6 +294,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3TC72MWFP8;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -309,6 +311,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
