@@ -33,7 +33,7 @@ class GameScene: SKScene {
     }
 
     private var isPlaying = false
-    private var isPaused = false
+    private var isGamePaused = false
     private var pauseTime: TimeInterval = 0
     private let maxProximityRange: CGFloat = 150
     private var resignObserver: Any?
@@ -339,7 +339,7 @@ class GameScene: SKScene {
             navigateToMenu()
             return
         }
-        if isPaused {
+        if isGamePaused {
             resumeGame()
             return
         }
@@ -535,8 +535,8 @@ class GameScene: SKScene {
     // MARK: - Pause / Resume
 
     private func pauseGame() {
-        guard isPlaying, !isPaused else { return }
-        isPaused = true
+        guard isPlaying, !isGamePaused else { return }
+        isGamePaused = true
         endTouch()
 
         let overlay = SKShapeNode(rectOf: size)
@@ -556,8 +556,8 @@ class GameScene: SKScene {
     }
 
     private func resumeGame() {
-        guard isPaused else { return }
-        isPaused = false
+        guard isGamePaused else { return }
+        isGamePaused = false
         enumerateChildNodes(withName: "pause") { n, _ in n.removeFromParent() }
         self.view?.isPaused = false
     }
