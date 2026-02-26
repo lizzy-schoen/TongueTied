@@ -15,6 +15,28 @@ class ScoreManager {
     var onComboUpdate: ((Int) -> Void)?
     var onLevelComplete: ((_ passed: Bool, _ finalScore: Int) -> Void)?
 
+    // MARK: - Persistent high scores
+
+    private static let highScorePrefix = "highScore_level_"
+
+    static func highScore(for level: Int) -> Int {
+        UserDefaults.standard.integer(forKey: "\(highScorePrefix)\(level)")
+    }
+
+    static func setHighScore(_ score: Int, for level: Int) {
+        let key = "\(highScorePrefix)\(level)"
+        if score > UserDefaults.standard.integer(forKey: key) {
+            UserDefaults.standard.set(score, forKey: key)
+        }
+    }
+
+    static func highestCompletedLevel() -> Int {
+        for level in Level.all.reversed() {
+            if highScore(for: level.number) >= level.targetScore { return level.number }
+        }
+        return 0
+    }
+
     init() {
         currentLevel = Level.all[0]
     }
@@ -99,6 +121,7 @@ class ScoreManager {
 
     private func endLevel() {
         isLevelActive = false
+        ScoreManager.setHighScore(score, for: currentLevel.number)
         onLevelComplete?(score >= currentLevel.targetScore, score)
     }
 }

@@ -18,9 +18,8 @@ class GameViewController: UIViewController {
         skView.presentScene(scene)
         skView.isMultipleTouchEnabled = true
 
-        // Debug overlays — turn off before shipping
-        skView.showsFPS = true
-        skView.showsNodeCount = true
+        skView.showsFPS = false
+        skView.showsNodeCount = false
 
         // Keep the screen awake during gameplay
         UIApplication.shared.isIdleTimerDisabled = true

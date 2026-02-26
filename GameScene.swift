@@ -25,7 +25,10 @@ class GameScene: SKScene {
     // MARK: - State
 
     private var isPlaying = false
+    private var isPaused = false
+    private var pauseTime: TimeInterval = 0
     private let maxProximityRange: CGFloat = 150
+    private var resignObserver: Any?
 
     // MARK: - Scene lifecycle
 
@@ -37,7 +40,15 @@ class GameScene: SKScene {
         wireScoreCallbacks()
         audioSynthManager.setup()
 
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: .appWillResignActive, object: nil, queue: .main
+        ) { [weak self] _ in self?.pauseGame() }
+
         showLevelIntro(Level.all[0])
+    }
+
+    deinit {
+        if let o = resignObserver { NotificationCenter.default.removeObserver(o) }
     }
 
     // MARK: - Zone geometry
@@ -153,8 +164,20 @@ class GameScene: SKScene {
         hint.name = "intro"
         addChild(hint)
 
+        // High score
+        let best = ScoreManager.highScore(for: level.number)
+        if best > 0 {
+            let hs = SKLabelNode(fontNamed: "AvenirNext-Medium")
+            hs.text = "Best: \(best)"
+            hs.fontSize = 14
+            hs.fontColor = UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 0.7)
+            hs.position = CGPoint(x: size.width / 2, y: size.height * 0.66)
+            hs.name = "intro"
+            addChild(hs)
+        }
+
         // Tap prompt
-        let tap = makeLabel(size: 20, pos: CGPoint(x: size.width / 2, y: size.height * 0.64))
+        let tap = makeLabel(size: 20, pos: CGPoint(x: size.width / 2, y: size.height * 0.60))
         tap.text = "Tap to start"
         tap.fontColor = UIColor(white: 0.6, alpha: 1)
         tap.name = "intro"
@@ -197,7 +220,9 @@ class GameScene: SKScene {
 
         if passed {
             hapticManager.playSuccess()
-            showFeedback("Level Complete!", color: .green)
+            let prevBest = ScoreManager.highScore(for: scoreManager.currentLevel.number)
+            let isNewBest = score > prevBest
+            showFeedback(isNewBest ? "New Best!" : "Level Complete!", color: .green)
             run(.wait(forDuration: 2)) { [weak self] in
                 guard let self, let next = self.scoreManager.nextLevel() else {
                     self?.showFeedback("All levels done!", color: .yellow)
@@ -218,6 +243,10 @@ class GameScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
+        if isPaused {
+            resumeGame()
+            return
+        }
         if !isPlaying {
             startCurrentLevel(at: touch.timestamp)
             return
@@ -362,6 +391,36 @@ class GameScene: SKScene {
             speedModulation: 0,
             patternModulation: 0
         )
+    }
+
+    // MARK: - Pause / Resume
+
+    private func pauseGame() {
+        guard isPlaying, !isPaused else { return }
+        isPaused = true
+        endTouch()
+
+        let overlay = SKShapeNode(rectOf: size)
+        overlay.fillColor = UIColor(white: 0, alpha: 0.6)
+        overlay.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        overlay.zPosition = 100
+        overlay.name = "pause"
+        addChild(overlay)
+
+        let label = makeLabel(size: 28, pos: CGPoint(x: size.width / 2, y: size.height / 2))
+        label.text = "Paused — Tap to Resume"
+        label.zPosition = 101
+        label.name = "pause"
+        addChild(label)
+
+        self.view?.isPaused = true
+    }
+
+    private func resumeGame() {
+        guard isPaused else { return }
+        isPaused = false
+        enumerateChildNodes(withName: "pause") { n, _ in n.removeFromParent() }
+        self.view?.isPaused = false
     }
 
     // MARK: - Helpers
