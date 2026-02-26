@@ -21,6 +21,7 @@ class GameScene: SKScene {
     private var levelLabel: SKLabelNode!
     private var patternLabel: SKLabelNode!
     private var feedbackLabel: SKLabelNode!
+    private var themeButton: SKShapeNode!
 
     // MARK: - State
 
@@ -56,7 +57,7 @@ class GameScene: SKScene {
     private func buildZones() {
         let cx = size.width / 2
         let cy = size.height * 0.45
-        let s  = min(size.width, size.height) / 400     // reference scale
+        let s  = min(size.width, size.height) / 300     // reference scale
 
         addZone(.outerLabiaLeft,  oval: CGPoint(x: cx - 55*s, y: cy),          rx: 30*s, ry: 110*s, z: 0)
         addZone(.outerLabiaRight, oval: CGPoint(x: cx + 55*s, y: cy),          rx: 30*s, ry: 110*s, z: 0)
@@ -96,6 +97,15 @@ class GameScene: SKScene {
 
         [levelLabel, scoreLabel, timerLabel, comboLabel,
          patternLabel, feedbackLabel].forEach { addChild($0) }
+
+        // Theme selector button (top-left)
+        themeButton = SKShapeNode(circleOfRadius: 14)
+        themeButton.fillColor = ColorTheme.current.previewColor
+        themeButton.strokeColor = UIColor(white: 0.5, alpha: 0.8)
+        themeButton.lineWidth = 2
+        themeButton.position = CGPoint(x: 40, y: top)
+        themeButton.zPosition = 50
+        addChild(themeButton)
     }
 
     private func makeLabel(size: CGFloat, pos: CGPoint) -> SKLabelNode {
@@ -243,6 +253,11 @@ class GameScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
+        let loc = touch.location(in: self)
+        if hypot(loc.x - themeButton.position.x, loc.y - themeButton.position.y) < 25 {
+            cycleTheme()
+            return
+        }
         if isPaused {
             resumeGame()
             return
@@ -424,6 +439,13 @@ class GameScene: SKScene {
     }
 
     // MARK: - Helpers
+
+    private func cycleTheme() {
+        ColorTheme.cycleNext()
+        themeButton.fillColor = ColorTheme.current.previewColor
+        for zone in zoneNodes { zone.applyTheme() }
+        showFeedback(ColorTheme.current.name, color: .white)
+    }
 
     private func showFeedback(_ text: String, color: UIColor) {
         feedbackLabel.text = text
